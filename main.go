@@ -2,15 +2,36 @@ package main
 
 import (
 	"fmt"
-	"rtc/rtc"       // Adjust based on your module name
-	"rtc/socket"    // Adjust based on your module name
+	"log"
+	"net/http"
+	"rtc/rtc"
+	"rtc/socket"
 )
 
 func main() {
-	fmt.Println("welcome to webrtc series in golang")
+	http.HandleFunc("/ws", handleWebSocket)
 
-	// Register the RTC processor
-	socket.Register("rtc", &rtc.RTCProcessor{Signaler: &socket.WSSignaler{}})
+	fmt.Println("Signaling server started on :8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}
 
-	// ... rest of your server setup
+func handleWebSocket(w http.ResponseWriter, r *http.Request) {
+	// 1. Upgrade the connection
+	conn, err := socket.UpgradeCurrentRequestToWebrequest(w, r)
+	if err != nil {
+		log.Println("Upgrade failed:", err)
+		return
+	}
+
+	// 2. Create the Signaler Adapter
+	wsSignaler := &socket.WSSignaler{Conn: conn}
+
+	// 3. Register the RTC Processor with this specific signaler
+	socket.Register("rtc", &rtc.RTCProcessor{
+		Signaler: wsSignaler,
+	})
+
+	// 4. Start the message loop
+	fmt.Println("Client connected, starting packet loop...")
+	socket.ProcessPackets(conn)
 }
