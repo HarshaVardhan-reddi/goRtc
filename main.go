@@ -10,7 +10,7 @@ func main() {
 	fmt.Println("welcome to webrtc series in golang")
 
 	// Register the RTC processor
-	socket.Register("rtc", &rtc.RTCProcessor{})
+	socket.Register("rtc", &rtc.RTCProcessor{Signaler: &socket.WSSignaler{}})
 
 	// ... rest of your server setup
 }

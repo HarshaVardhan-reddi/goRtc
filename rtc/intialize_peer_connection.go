@@ -10,23 +10,24 @@ import (
 
 var iceServer webrtc.ICEServer = webrtc.ICEServer{URLs: []string{"stun:stun.l.google.com:19302"}}
 
-func IntializePeerConnection(signal func([]byte)error) (*webrtc.PeerConnection, error) {
+func InitializePeerConnection(signaler Signaler) (*webrtc.PeerConnection, error) {
 	config := webrtc.Configuration{ICEServers: []webrtc.ICEServer{iceServer}}
 	rtcConn, err := webrtc.NewPeerConnection(config)
-	if(err != nil){
+	if err != nil {
 		return nil, err
 	}
 	rtcConn.OnICECandidate(func(i *webrtc.ICECandidate) {
-		if(i == nil){
+		if i == nil {
 			return
 		}
 		rawCandidate := i.ToJSON()
-		payload, errForCandiateParse := json.Marshal(rawCandidate)
-		if(errForCandiateParse != nil){
-			log.Println(errForCandiateParse)
+		payload, err := json.Marshal(rawCandidate)
+		if err != nil {
+			log.Println(err)
+			return
 		}
-		if errInMessageWriter := signal(payload); errInMessageWriter != nil{
-			log.Println("Signaling failed:",errInMessageWriter)
+		if err := signaler.Send(payload); err != nil {
+			log.Println("Signaling failed:", err)
 		}
 	})
 	return rtcConn, nil

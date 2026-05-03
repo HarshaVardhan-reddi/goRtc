@@ -10,7 +10,6 @@ import (
 func ProcessPackets(webSocketConn *websocket.Conn) {
 	for {
 		pkt := Packet{}
-
 		_, messageInByte, err := webSocketConn.ReadMessage()
 		if err != nil {
 			log.Println("error in reading packets:", err)
@@ -29,4 +28,12 @@ func ProcessPackets(webSocketConn *websocket.Conn) {
 
 		pkt.DispatchPacket()
 	}
+}
+
+func WritePacket(webSocketConn *websocket.Conn, pkt Packet) error {
+	data, err := json.Marshal(pkt)
+	if err != nil {
+		return err
+	}
+	return webSocketConn.WriteMessage(websocket.TextMessage, data)
 }
