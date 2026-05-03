@@ -2,32 +2,15 @@ package main
 
 import (
 	"fmt"
-	"log"
-
-	// "github.com/pion/rtcp"
-	"github.com/pion/webrtc/v4"
+	"rtc/rtc"       // Adjust based on your module name
+	"rtc/socket"    // Adjust based on your module name
 )
 
-var ICESERVERS webrtc.ICEServer = webrtc.ICEServer{URLs: []string{"stun:stun.l.google.com:19302"}}
-
-func main(){
+func main() {
 	fmt.Println("welcome to webrtc series in golang")
-	peerconn,err := intializePeerConnection()
-	if(err != nil){
-		log.Fatal(err)
-	}
-	sdp, errInOffer := createOffer(peerconn)
-	if(errInOffer != nil ){
-		log.Fatal(errInOffer)
-	}
-	fmt.Println("Here is your sdp\n",sdp)
-}
 
-func intializePeerConnection() (*webrtc.PeerConnection, error) {
-	config := webrtc.Configuration{ICEServers: []webrtc.ICEServer{ICESERVERS}}
-	conn, err := webrtc.NewPeerConnection(config)
-	if(err != nil){
-		return nil, err
-	}
-	return conn, nil
+	// Register the RTC processor
+	socket.Register("rtc", &rtc.RTCProcessor{})
+
+	// ... rest of your server setup
 }

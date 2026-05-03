@@ -39,8 +39,4 @@ func singalPeer(webSockConn *websocket.Conn, sdp string, webrtcPeerConn *webrtc.
 		_,errorForMessge := reader.Read(message)
 		fmt.Println(errorForMessge)
 	}
-	// sending ice candidates to peer
-	webrtcPeerConn.OnICECandidate(func(i *webrtc.ICECandidate) {
-		webSockConn.WriteMessage(websocket.TextMessage, []byte(i.ToJSON().Candidate))
-	})
 }
