@@ -7,9 +7,13 @@ import (
 )
 
 func CreateOffer(webrtcConn *webrtc.PeerConnection) (*webrtc.SessionDescription, error) {
-	sdp, err := webrtcConn.CreateOffer(nil)
+	_, err := webrtcConn.CreateDataChannel("data", nil)
 	if(err != nil){
-		return nil, err
+		log.Println("data channel creation failed:", err)
+	}
+	sdp, errInOffer := webrtcConn.CreateOffer(nil)
+	if(errInOffer != nil){
+		return nil, errInOffer
 	}
 	webrtcConn.SetLocalDescription(sdp)
 	return &sdp,nil
