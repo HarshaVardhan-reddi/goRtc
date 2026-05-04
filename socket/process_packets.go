@@ -16,6 +16,8 @@ func ProcessPackets(webSocketConn *websocket.Conn) {
 			break
 		}
 
+		log.Println("message in string", string(messageInByte))
+
 		if errInUnmarshal := json.Unmarshal(messageInByte, &pkt); errInUnmarshal != nil {
 			log.Println("error in parsing packets:", errInUnmarshal)
 			continue

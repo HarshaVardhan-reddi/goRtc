@@ -65,6 +65,22 @@ func (p *RTCProcessor) Process(payload json.RawMessage) error {
 
 		log.Println("Sent Answer successfully")
 
+	case "candidate":
+		// Peer sent an ICE candidate, we need to add it to our connection
+		var candidate webrtc.ICECandidateInit
+		if err := json.Unmarshal(event.Data, &candidate); err != nil {
+			return fmt.Errorf("failed to unmarshal candidate: %w", err)
+		}
+
+		if activeConn != nil {
+			fmt.Println("Adding remote ICE Candidate...")
+			if err := activeConn.AddICECandidate(candidate); err != nil {
+				return fmt.Errorf("failed to add ice candidate: %w", err)
+			}
+		} else {
+			log.Println("Warning: Received candidate but activeConn is nil")
+		}
+
 	case "answer":
 		// We sent an Offer, and received an Answer back
 		var sdp string
