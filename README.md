@@ -246,29 +246,41 @@ The server will respond with an `answer` event and trickle ICE candidates.
 
 ## Roadmap — where this is heading
 
-The end goal is a **multi-peer media forwarder (SFU)**, not just data-channel signaling.
+The end goal is a **multi-peer live broadcast server**, not just data-channel signaling.
 
-The model:
+The model is a **transcoding pipeline + a live broadcast server**. The server is the source — there is **no publishing peer and no "host"**; peers are pure viewers.
 
-- **Multiple peers** connect at once (rooms / a connection map instead of the current global `activeConn`).
-- A peer **ingests a media track** (video codec carried over a WebRTC media track) into the server.
-- The server **fans that single ingested track out to every other peer** — one publisher, many subscribers. There is **no special "host"**; any peer can be a source, and its media is redistributed to everyone in the room.
+### 1. Transcoding pipeline (offline / prep stage)
 
-This is the classic **Selective Forwarding Unit** pattern: the server receives one uplink stream and forwards its RTP packets to all subscribers, so each publisher uploads once instead of once-per-peer.
+A source video is run through a pipeline that **transcodes it into multiple formats / qualities**. Each variant is **written to its own folder**, and the **encoded codec data is stored** on disk ready to be streamed.
+
+```mermaid
+flowchart LR
+    SRC["Source video"] --> T["Transcode pipeline<br/>(multiple formats/qualities)"]
+    T --> F1["/formatA/<br/>codec + segments"]
+    T --> F2["/formatB/<br/>codec + segments"]
+    T --> F3["/formatC/<br/>codec + segments"]
+```
+
+### 2. Live broadcast (serve stage)
+
+The broadcast server **reads the stored codec data** for a chosen format and **feeds it over the RTP media track** to every connected viewer. Because the source is server-side, this is a **one-to-many live broadcast**: read once, forward the same RTP to all viewers.
 
 ```mermaid
 flowchart TD
-    P1["Peer A<br/>(ingests video track)"] -- "uplink RTP" --> SFU["goRtc SFU<br/>(forward media)"]
-    SFU -- "downlink RTP" --> P2["Peer B"]
-    SFU -- "downlink RTP" --> P3["Peer C"]
-    SFU -- "downlink RTP" --> P4["Peer D"]
+    STORE["Stored codec<br/>(/formatX/ folder)"] -- "read frames" --> SRV["goRtc Broadcast Server<br/>(feed → media track)"]
+    SRV -- "RTP" --> V1["Viewer A"]
+    SRV -- "RTP" --> V2["Viewer B"]
+    SRV -- "RTP" --> V3["Viewer C"]
 ```
 
 ### Steps to get there
 
-- [ ] Support multiple simultaneous peers (rooms / connection map, drop the global `activeConn`)
-- [ ] Add **media tracks** alongside the existing DataChannel path (`OnTrack` on the ingesting peer)
-- [ ] **Forward** an ingested track's RTP to all other peers in the room (`TrackLocalStaticRTP` fan-out) — SFU core
-- [ ] Handle video codec negotiation on the media track for every subscriber
-- [ ] A browser demo client (publish + subscribe)
-- [ ] Graceful connection teardown, peer leave/join, and reconnection
+- [ ] Build the **transcoding pipeline**: source video → multiple formats/qualities, each in its own folder
+- [ ] **Store the encoded codec data** per format, ready for streaming
+- [ ] Read stored codec frames into a `TrackLocalStaticSample` / `TrackLocalStaticRTP`
+- [ ] Support multiple simultaneous viewers (rooms / connection map, drop the global `activeConn`)
+- [ ] **Attach the track to every peer connection** so all viewers get the same live RTP stream
+- [ ] Handle codec negotiation on the media track for every viewer
+- [ ] A browser demo client (subscribe + play the live video)
+- [ ] Graceful teardown, viewer leave/join, and reconnection
